@@ -1,6 +1,6 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, ThemeProvider } from 'expo-router';
 import { useState } from 'react';
-import { useColorScheme, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
@@ -8,7 +8,6 @@ import { LoginScreen } from '@/components/login-screen';
 
 export default function RootLayout() {
   const [authenticated, setAuthenticated] = useState(false);
-  const colorScheme = useColorScheme();
 
   if (!authenticated) {
     return (
@@ -20,7 +19,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DarkTheme}>
       <AppTabs />
     </ThemeProvider>
   );

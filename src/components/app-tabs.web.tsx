@@ -1,44 +1,48 @@
 import {
-  Tabs,
   TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
   TabListProps,
+  TabSlot,
+  TabTrigger,
+  TabTriggerSlotProps,
+  Tabs,
 } from 'expo-router/ui';
-import { SymbolView } from 'expo-symbols';
-import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ExternalLink } from './external-link';
+import { SG } from '@/constants/colors';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
-        <CustomTabList>
+        <WebNavBar>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+            <NavButton>Home</NavButton>
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
+          <TabTrigger name="chat" href="/chat" asChild>
+            <NavButton>Chat IA</NavButton>
           </TabTrigger>
-        </CustomTabList>
+          <TabTrigger name="risco" href="/risco" asChild>
+            <NavButton>Risco</NavButton>
+          </TabTrigger>
+          <TabTrigger name="campo" href="/campo" asChild>
+            <NavButton>Campo</NavButton>
+          </TabTrigger>
+        </WebNavBar>
       </TabList>
     </Tabs>
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+function NavButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
+        style={styles.navButtonView}>
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
         </ThemedText>
@@ -47,42 +51,30 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
-export function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
+function WebNavBar(props: TabListProps) {
   return (
-    <View {...props} style={styles.tabListContainer}>
+    <View {...props} style={styles.navBarContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
-          Expo Starter
+          SPACE GUARD
         </ThemedText>
-
         {props.children}
-
-        <ExternalLink href="https://docs.expo.dev" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">Docs</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink>
       </ThemedView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabListContainer: {
+  navBarContainer: {
     position: 'absolute',
     width: '100%',
     padding: Spacing.three,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    backgroundColor: SG.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: SG.border,
   },
   innerContainer: {
     paddingVertical: Spacing.two,
@@ -96,20 +88,14 @@ const styles = StyleSheet.create({
   },
   brandText: {
     marginRight: 'auto',
+    letterSpacing: 2,
   },
   pressed: {
     opacity: 0.7,
   },
-  tabButtonView: {
+  navButtonView: {
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
-  },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
   },
 });
