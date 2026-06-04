@@ -194,7 +194,7 @@ export function LoginScreen({ onLogin }: Props) {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), senha: password }),
@@ -219,12 +219,19 @@ export function LoginScreen({ onLogin }: Props) {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/register`, {
+      console.log('Request body antes da req:', {
+        nome_usuario: name.trim(),
+        telefone: telefone.trim(),
+        email: email.trim(),
+        senha: password,
+        role: 'admin',
+      });
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome_usuario: name.trim(),
-          telefone: telefone.trim(),
+          nomeUsuario: name.trim(),
+          telefone: telefone.replace(/\D/g, ''),
           email: email.trim(),
           senha: password,
           role: 'admin',
@@ -388,9 +395,9 @@ export function LoginScreen({ onLogin }: Props) {
                 </Field>
 
                 <Field label="SENHA">
-                  <View style={[styles.inputWrapper, focusedField === 'password' && styles.inputFocused]}>
+                  <View style={styles.inputWrapper}>
                     <TextInput
-                      style={styles.inputInner}
+                      style={[styles.input, styles.inputWithEye, focusedField === 'password' && styles.inputFocused]}
                       placeholder="••••••••"
                       placeholderTextColor={C.muted}
                       value={password}
@@ -728,25 +735,19 @@ const styles = StyleSheet.create({
     color: C.text,
     fontSize: 14,
   },
-  // password field wrapper (replaces plain input for senha)
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface2,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 10,
+    position: 'relative',
   },
-  inputInner: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 13 : 10,
-    color: C.text,
-    fontSize: 14,
+  inputWithEye: {
+    paddingRight: 72,
   },
   eyeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    paddingHorizontal: 14,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   eyeText: {
