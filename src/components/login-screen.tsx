@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +22,17 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.replace(/(\d+)/, '($1');
+  if (digits.length <= 6) return digits.replace(/(\d{2})(\d+)/, '($1) $2');
+  if (digits.length <= 10)
+    return digits.replace(/(\d{2})(\d{4})(\d+)/, '($1) $2-$3');
+  return digits.replace(/(\d{2})(\d{5})(\d+)/, '($1) $2-$3');
+}
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -50,7 +63,6 @@ const STARS = Array.from({ length: 90 }, (_, i) => ({
   duration: 700 + Math.floor(ph(i, 6) * 1500),
 }));
 
-// Individual twinkling star with reanimated opacity pulse
 function TwinkleStar({
   x,
   y,
@@ -96,7 +108,6 @@ function TwinkleStar({
   );
 }
 
-// Animated orbit rings with satellite dots
 function OrbitDecoration() {
   const rot1 = useSharedValue(0);
   const rot2 = useSharedValue(0);
@@ -123,21 +134,14 @@ function OrbitDecoration() {
 
   return (
     <View style={styles.orbit}>
-      {/* Outer ring */}
       <View style={styles.orbitRingOuter} />
-      {/* Outer satellite (rotates CW) */}
       <Animated.View style={[styles.orbitTrackOuter, style1]}>
         <View style={styles.satelliteOuter} />
       </Animated.View>
-
-      {/* Inner ring */}
       <View style={styles.orbitRingInner} />
-      {/* Inner satellite (rotates CCW) */}
       <Animated.View style={[styles.orbitTrackInner, style2]}>
         <View style={styles.satelliteInner} />
       </Animated.View>
-
-      {/* Planet */}
       <View style={styles.planet}>
         <View style={styles.planetGlow} />
         <View style={styles.planetHighlight} />
@@ -146,7 +150,6 @@ function OrbitDecoration() {
   );
 }
 
-// Labeled input field
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.field}>
@@ -161,10 +164,12 @@ type Props = { onLogin: () => void };
 export function LoginScreen({ onLogin }: Props) {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPwd, setConfirmPwd] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const tabProgress = useSharedValue(0);
   const tabContainerW = useSharedValue(0);
@@ -182,11 +187,72 @@ export function LoginScreen({ onLogin }: Props) {
     focusedField === field && styles.inputFocused,
   ];
 
+  async function handleLogin() {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Atenção', 'Preencha e-mail e senha.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), senha: password }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        Alert.alert('Erro ao entrar', body || `Código ${res.status}`);
+        return;
+      }
+      onLogin();
+    } catch (e: any) {
+      Alert.alert('Erro de conexão', e?.message ?? 'Não foi possível conectar à API.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister() {
+    if (!name.trim() || !telefone.trim() || !email.trim() || !password.trim()) {
+      Alert.alert('Atenção', 'Preencha todos os campos.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome_usuario: name.trim(),
+          telefone: telefone.trim(),
+          email: email.trim(),
+          senha: password,
+          role: 'admin',
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        Alert.alert('Erro ao cadastrar', body || `Código ${res.status}`);
+        return;
+      }
+      Alert.alert('Conta criada!', 'Faça login para continuar.', [
+        { text: 'OK', onPress: () => setTab('login') },
+      ]);
+      setName('');
+      setTelefone('');
+      setPassword('');
+    } catch (e: any) {
+      Alert.alert('Erro de conexão', e?.message ?? 'Não foi possível conectar à API.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={C.bg} />
 
-      {/* ── Star field ─────────────────────────────────────────── */}
+      {/* Star field */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {STARS.filter(s => !s.twinkle).map(s => (
           <View
@@ -213,8 +279,6 @@ export function LoginScreen({ onLogin }: Props) {
             duration={s.duration}
           />
         ))}
-
-        {/* Nebula glows */}
         <View style={[styles.nebula, { top: -130, left: -100, backgroundColor: '#1e3a8a' }]} />
         <View style={[styles.nebula, { bottom: -130, right: -100, backgroundColor: '#4c1d95' }]} />
         <View
@@ -225,7 +289,7 @@ export function LoginScreen({ onLogin }: Props) {
         />
       </View>
 
-      {/* ── Content ────────────────────────────────────────────── */}
+      {/* Content */}
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -235,7 +299,6 @@ export function LoginScreen({ onLogin }: Props) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
 
-            {/* Orbit decoration */}
             <OrbitDecoration />
 
             {/* Logo */}
@@ -279,18 +342,34 @@ export function LoginScreen({ onLogin }: Props) {
               {/* Form */}
               <View style={styles.form}>
                 {tab === 'register' && (
-                  <Field label="NOME COMPLETO">
-                    <TextInput
-                      style={inputStyle('name')}
-                      placeholder="Seu nome"
-                      placeholderTextColor={C.muted}
-                      value={name}
-                      onChangeText={setName}
-                      onFocus={() => setFocusedField('name')}
-                      onBlur={() => setFocusedField(null)}
-                      autoCapitalize="words"
-                    />
-                  </Field>
+                  <>
+                    <Field label="NOME COMPLETO">
+                      <TextInput
+                        style={inputStyle('name')}
+                        placeholder="Seu nome"
+                        placeholderTextColor={C.muted}
+                        value={name}
+                        onChangeText={setName}
+                        onFocus={() => setFocusedField('name')}
+                        onBlur={() => setFocusedField(null)}
+                        autoCapitalize="words"
+                      />
+                    </Field>
+
+                    <Field label="TELEFONE">
+                      <TextInput
+                        style={inputStyle('telefone')}
+                        placeholder="(11) 99999-9999"
+                        placeholderTextColor={C.muted}
+                        value={telefone}
+                        onChangeText={v => setTelefone(formatPhone(v))}
+                        onFocus={() => setFocusedField('telefone')}
+                        onBlur={() => setFocusedField(null)}
+                        keyboardType="phone-pad"
+                        maxLength={15}
+                      />
+                    </Field>
+                  </>
                 )}
 
                 <Field label="E-MAIL">
@@ -309,47 +388,47 @@ export function LoginScreen({ onLogin }: Props) {
                 </Field>
 
                 <Field label="SENHA">
-                  <TextInput
-                    style={inputStyle('password')}
-                    placeholder="••••••••"
-                    placeholderTextColor={C.muted}
-                    value={password}
-                    onChangeText={setPassword}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    secureTextEntry
-                  />
-                </Field>
-
-                {tab === 'register' && (
-                  <Field label="CONFIRMAR SENHA">
+                  <View style={[styles.inputWrapper, focusedField === 'password' && styles.inputFocused]}>
                     <TextInput
-                      style={inputStyle('confirm')}
+                      style={styles.inputInner}
                       placeholder="••••••••"
                       placeholderTextColor={C.muted}
-                      value={confirmPwd}
-                      onChangeText={setConfirmPwd}
-                      onFocus={() => setFocusedField('confirm')}
+                      value={password}
+                      onChangeText={setPassword}
+                      onFocus={() => setFocusedField('password')}
                       onBlur={() => setFocusedField(null)}
-                      secureTextEntry
+                      secureTextEntry={!showPassword}
                     />
-                  </Field>
-                )}
+                    <Pressable
+                      onPress={() => setShowPassword(v => !v)}
+                      style={styles.eyeBtn}
+                      hitSlop={8}>
+                      <Text style={styles.eyeText}>{showPassword ? 'OCULTAR' : 'VER'}</Text>
+                    </Pressable>
+                  </View>
+                </Field>
 
                 {/* CTA button */}
                 <Pressable
                   style={({ pressed }) => [styles.submitBtn, pressed && styles.submitBtnPressed]}
-                  onPress={onLogin}>
-                  <Text style={styles.submitBtnText}>
-                    {tab === 'login' ? '→  ENTRAR' : '→  CRIAR CONTA'}
-                  </Text>
+                  onPress={tab === 'login' ? handleLogin : handleRegister}
+                  disabled={loading}>
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>
+                      {tab === 'login' ? '→  ENTRAR' : '→  CRIAR CONTA'}
+                    </Text>
+                  )}
                 </Pressable>
 
-                {tab === 'login' ? (
+                {tab === 'login' && (
                   <Pressable style={styles.secondaryLink}>
                     <Text style={styles.secondaryLinkText}>Esqueci minha senha</Text>
                   </Pressable>
-                ) : (
+                )}
+
+                {tab === 'register' && (
                   <Text style={styles.termsText}>
                     Ao criar uma conta, você concorda com os{' '}
                     <Text style={styles.termsLink}>Termos de Uso</Text>
@@ -371,11 +450,11 @@ export function LoginScreen({ onLogin }: Props) {
   );
 }
 
-// ── Orbit dimensions ────────────────────────────────────────────
-const D = 120; // decoration container size
-const OR = 110; // outer ring size
-const IR = 74; // inner ring size
-const PL = 36; // planet size
+// ── Orbit dimensions ─────────────────────────────────────────────
+const D = 120;
+const OR = 110;
+const IR = 74;
+const PL = 36;
 
 const styles = StyleSheet.create({
   root: {
@@ -395,7 +474,7 @@ const styles = StyleSheet.create({
     paddingBottom: 44,
   },
 
-  // ── Nebula glows ──
+  // Nebula glows
   nebula: {
     position: 'absolute',
     width: 360,
@@ -411,7 +490,7 @@ const styles = StyleSheet.create({
     opacity: 0.05,
   },
 
-  // ── Orbit ──
+  // Orbit
   orbit: {
     width: D,
     height: D,
@@ -516,7 +595,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-25deg' }],
   },
 
-  // ── Logo ──
+  // Logo
   logoSection: {
     alignItems: 'center',
     marginBottom: 16,
@@ -556,7 +635,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 
-  // ── Status pill ──
+  // Status pill
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -585,7 +664,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  // ── Auth card ──
+  // Auth card
   authCard: {
     width: '100%',
     maxWidth: 380,
@@ -625,7 +704,7 @@ const styles = StyleSheet.create({
     color: C.text,
   },
 
-  // ── Form ──
+  // Form
   form: {
     padding: 20,
     gap: 16,
@@ -648,6 +727,33 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 13 : 10,
     color: C.text,
     fontSize: 14,
+  },
+  // password field wrapper (replaces plain input for senha)
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface2,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+  },
+  inputInner: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 13 : 10,
+    color: C.text,
+    fontSize: 14,
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: 'center',
+  },
+  eyeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: C.accent,
   },
   inputFocused: {
     borderColor: C.accent,
@@ -698,7 +804,7 @@ const styles = StyleSheet.create({
     color: C.accent,
   },
 
-  // ── Footer ──
+  // Footer
   footer: {
     color: C.muted,
     fontSize: 10,
