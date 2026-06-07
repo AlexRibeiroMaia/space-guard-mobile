@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SG } from '@/constants/colors';
 
@@ -11,6 +12,17 @@ function TabIcon({ name, color, size }: { name: SymbolName; color: string; size:
 }
 
 export default function AppTabs() {
+  const insets = useSafeAreaInsets();
+
+  // Android: insets.bottom = 0 (3 botões) ou ~24 (gestos) — sempre respeitamos
+  // iOS: insets.bottom já cobre a home bar
+  const bottomPad = Platform.OS === 'ios'
+    ? Math.max(insets.bottom, 16)
+    : Math.max(insets.bottom, 8);
+  const tabBarHeight = Platform.OS === 'ios'
+    ? 50 + bottomPad
+    : 52 + bottomPad;
+
   return (
     <Tabs
       screenOptions={{
@@ -19,8 +31,8 @@ export default function AppTabs() {
           backgroundColor: SG.surface,
           borderTopColor: SG.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 80 : 60,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          height: tabBarHeight,
+          paddingBottom: bottomPad,
           paddingTop: 8,
         },
         tabBarActiveTintColor: SG.accent,
