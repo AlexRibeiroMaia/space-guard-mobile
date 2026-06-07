@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "688565870671",
+    "project_id": "space-guard-65689",
+    "storage_bucket": "space-guard-65689.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688565870671:android:cc4b97db563a7320e80a3a",
+        "android_client_info": {
+          "package_name": "com.fiap.spaceguard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAO4DVjikPSIIwpVVjM7AI1H1rqUvIxUTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
