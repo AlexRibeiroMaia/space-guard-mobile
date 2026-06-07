@@ -49,6 +49,14 @@
         {
           "locationWhenInUsePermission": "O Space Guard usa sua localização para mostrar focos de incêndio próximos a você."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "experiments": {
