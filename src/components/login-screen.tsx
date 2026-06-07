@@ -23,6 +23,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { authService } from '@/services/api';
+import type { AuthUser } from '@/types';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
 
 function formatPhone(raw: string): string {
@@ -159,7 +162,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-type Props = { onLogin: () => void };
+type Props = { onLogin: (user: AuthUser, token: string) => void };
 
 export function LoginScreen({ onLogin }: Props) {
   const [tab, setTab] = useState<'login' | 'register'>('login');
@@ -204,7 +207,35 @@ export function LoginScreen({ onLogin }: Props) {
         Alert.alert('Erro ao entrar', body || `Código ${res.status}`);
         return;
       }
-      onLogin();
+      const responseText = await res.text();
+      let jwtToken = '';
+      let userData: AuthUser = { id: '', nomeUsuario: '', email: email.trim(), telefone: '' };
+
+      try {
+        const json = JSON.parse(responseText);
+        jwtToken = json?.token ?? json?.accessToken ?? json?.access_token ?? '';
+      } catch {
+        // resposta sem JSON válido
+      }
+
+      // Busca perfil completo (id, nomeUsuario, etc.) com o token recebido
+      if (jwtToken) {
+        try {
+          const profile = await authService.getProfile(jwtToken);
+          const root = profile ?? {};
+          userData = {
+            id: (root as any)?.idUsuario ?? (root as any)?.id ?? (root as any)?.id_usuario ?? '',
+            nomeUsuario: (root as any)?.nomeUsuario ?? (root as any)?.nome_usuario ?? '',
+            email: (root as any)?.email ?? email.trim(),
+            telefone: (root as any)?.telefone ?? '',
+          };
+        } catch {
+          // /auth/me indisponível — continua só com e-mail
+          userData.email = email.trim();
+        }
+      }
+
+      onLogin(userData, jwtToken);
     } catch (e: any) {
       Alert.alert('Erro de conexão', e?.message ?? 'Não foi possível conectar à API.');
     } finally {
