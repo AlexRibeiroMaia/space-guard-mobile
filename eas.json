@@ -6,7 +6,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8080",
+        "EXPO_PUBLIC_INGEST_URL": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8083/importar"
+      }
     },
     "preview": {
       "android": {
@@ -15,10 +19,18 @@
       "ios": {
         "simulator": false
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8080",
+        "EXPO_PUBLIC_INGEST_URL": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8083/importar"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8080",
+        "EXPO_PUBLIC_INGEST_URL": "http://spaceguard-rm560512.eastus2.azurecontainer.io:8083/importar"
+      }
     }
   },
   "submit": {
