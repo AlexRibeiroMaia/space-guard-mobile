@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -8,20 +10,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppMenu } from '@/components/AppMenu';
 import { SG } from '@/constants/colors';
+import { useAuth } from '@/contexts/AuthContext';
 import { FocusListItem } from './components/FocusListItem';
 import { MetricCard } from './components/MetricCard';
 import { useDashboard } from './hooks/useDashboard';
 
 export function DashboardScreen() {
   const { metrics, focuses, loading, refreshing, onRefresh } = useDashboard();
+  const { logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <View style={styles.root}>
+      {/* Header */}
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerRow}>
           <View style={styles.headerBrand}>
-            <Text style={styles.headerMenu}>≡</Text>
+            <Pressable onPress={() => setMenuOpen(true)} hitSlop={10}>
+              <Text style={styles.headerMenu}>≡</Text>
+            </Pressable>
             <Text style={styles.headerTitle}>SPACE GUARD</Text>
           </View>
           <View style={styles.onlinePill}>
@@ -88,6 +97,12 @@ export function DashboardScreen() {
           </View>
         </ScrollView>
       )}
+
+      <AppMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onLogout={logout}
+      />
     </View>
   );
 }
