@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppMenu } from '@/components/AppMenu';
+import { Toast } from '@/components/Toast';
 import { SG } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { FocusListItem } from './components/FocusListItem';
@@ -18,9 +19,38 @@ import { MetricCard } from './components/MetricCard';
 import { useDashboard } from './hooks/useDashboard';
 
 export function DashboardScreen() {
-  const { metrics, focuses, loading, refreshing, onRefresh } = useDashboard();
+  const {
+    metrics,
+    focuses,
+    loading,
+    refreshing,
+    error,
+    onRefresh,
+    ingesting,
+    cooldown,
+    atualizarDados,
+  } = useDashboard();
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const onCooldown = cooldown > 0;
+  const btnDisabled = ingesting || onCooldown;
+
+  async function handleAtualizar() {
+    const ok = await atualizarDados();
+    setToast(
+      ok
+        ? 'Atualização solicitada! Use o pull-to-refresh em alguns instantes.'
+        : 'Não foi possível solicitar a atualização. Tente novamente.',
+    );
+  }
+
+  const btnLabel = ingesting
+    ? 'SOLICITANDO…'
+    : onCooldown
+      ? `AGUARDE ${cooldown}s`
+      : '↻  ATUALIZAR DADOS INPE';
 
   return (
     <View style={styles.root}>
@@ -55,6 +85,27 @@ export function DashboardScreen() {
               tintColor={SG.accent}
             />
           }>
+          <Pressable
+            style={({ pressed }) => [
+              styles.updateBtn,
+              btnDisabled && styles.updateBtnDisabled,
+              pressed && !btnDisabled && styles.updateBtnPressed,
+            ]}
+            onPress={handleAtualizar}
+            disabled={btnDisabled}>
+            {ingesting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.updateBtnText}>{btnLabel}</Text>
+            )}
+          </Pressable>
+
+          {error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
           <Text style={styles.sectionLabel}>MÉTRICAS EM TEMPO REAL</Text>
 
           <View style={styles.metricsGrid}>
@@ -81,7 +132,7 @@ export function DashboardScreen() {
               />
               <MetricCard
                 label="PRECISÃO ML"
-                value={`${metrics.precisaoML}%`}
+                value={metrics.precisaoML != null ? `${metrics.precisaoML}%` : '–'}
                 description="RandomForest"
                 color={SG.success}
               />
@@ -103,6 +154,8 @@ export function DashboardScreen() {
         onClose={() => setMenuOpen(false)}
         onLogout={logout}
       />
+
+      <Toast message={toast} onHide={() => setToast(null)} />
     </View>
   );
 }
@@ -168,6 +221,41 @@ const styles = StyleSheet.create({
   scroll: {
     padding: 16,
     paddingBottom: 32,
+  },
+  updateBtn: {
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: SG.accent,
+    marginBottom: 16,
+  },
+  updateBtnPressed: {
+    opacity: 0.8,
+  },
+  updateBtnDisabled: {
+    backgroundColor: SG.surface2,
+    borderWidth: 1,
+    borderColor: SG.border,
+  },
+  updateBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  errorBanner: {
+    backgroundColor: `${SG.danger}1a`,
+    borderWidth: 1,
+    borderColor: SG.danger,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: SG.danger,
+    fontSize: 12,
+    lineHeight: 17,
   },
   sectionLabel: {
     fontSize: 9,

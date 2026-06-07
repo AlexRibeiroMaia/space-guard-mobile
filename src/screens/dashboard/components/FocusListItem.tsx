@@ -2,11 +2,18 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { SG } from '@/constants/colors';
 import type { FocusItem, RiskLevel } from '@/types';
+import { toFiniteNumber } from '@/utils/geo';
 
 const RISK_COLOR: Record<RiskLevel, string> = {
   ALTO: '#ef4444',
-  MÉDIO: '#f59e0b',
+  MEDIO: '#f59e0b',
   BAIXO: '#10b981',
+};
+
+const RISK_LABEL: Record<RiskLevel, string> = {
+  ALTO: 'ALTO',
+  MEDIO: 'MÉDIO',
+  BAIXO: 'BAIXO',
 };
 
 const BIOME_EMOJI: Record<string, string> = {
@@ -39,15 +46,16 @@ export function FocusListItem({ item }: FocusListItemProps) {
 
       <View style={styles.info}>
         <Text style={styles.name}>
-          {item.bioma} — {item.estado}
+          {item.municipio} — {item.estado}
         </Text>
         <Text style={styles.meta}>
-          FRP: {item.frp.toFixed(1)} MW · {item.superficie}
+          {item.bioma} · Risco fogo {toFiniteNumber(item.riscoFogo)?.toFixed(2) ?? '—'}
+          {item.ativo ? ' · ativo' : ''}
         </Text>
       </View>
 
       <View style={[styles.badge, { backgroundColor: `${riskColor}26`, borderColor: riskColor }]}>
-        <Text style={[styles.badgeText, { color: riskColor }]}>{item.risco}</Text>
+        <Text style={[styles.badgeText, { color: riskColor }]}>{RISK_LABEL[item.risco]}</Text>
       </View>
     </View>
   );
